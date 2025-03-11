@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Upload Your Outfit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <nav class="flex justify-center items-center p-4 bg-gray-800">
+        <div class="flex items-center">
+            <span class="text-xl font-semibold">Fashion AI</span>
+        </div>
+    </nav>
+    <main class="flex flex-col items-center mt-10">
+        <h1 class="text-2xl font-semibold">Upload Your Outfit</h1>
+        <p class="text-gray-400 mt-2">For the best results, stand against a plain background and ensure the full outfit is visible.</p>
+        <div class="flex mt-8 space-x-4">
+            <div class="relative rounded-lg overflow-hidden" style="width: 400px; height: 600px;">
+                <img alt="Model Image" class="absolute inset-0 w-full h-full object-cover" id="modelImage" src="https://via.placeholder.com/400x600"/>
+                <input type="file" id="modelInput" class="absolute inset-0 opacity-0" accept="image/*" onchange="previewImage(event, 'modelImage')"/>
+                <button class="absolute inset-0 bg-black bg-opacity-50 text-white py-2 px-6 rounded-full text-lg flex items-center justify-center" onclick="document.getElementById('modelInput').click();">Upload Model Image</button>
+            </div>
+            <div class="relative rounded-lg overflow-hidden" style="width: 400px; height: 600px;">
+                <img alt="Cloth Image" class="absolute inset-0 w-full h-full object-cover" id="clothImage" src="https://via.placeholder.com/400x600"/>
+                <input type="file" id="clothInput" class="absolute inset-0 opacity-0" accept="image/*" onchange="previewImage(event, 'clothImage')"/>
+                <button class="absolute inset-0 bg-black bg-opacity-50 text-white py-2 px-6 rounded-full text-lg flex items-center justify-center" onclick="document.getElementById('clothInput').click();">Upload Cloth Image</button>
+            </div>
+        </div>
+        <button class="mt-8 bg-pink-600 text-white py-2 px-6 rounded-full" onclick="processOutfit()">Process Outfit</button>
+
+        <div id="loading" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center">
+            <div class="text-white text-lg">Processing...</div>
+        </div>
+
+        <!-- Image display area -->
+        <div id="resultContainer" class="mt-8 hidden">
+            <h2 class="text-xl font-semibold">Generated Outfit:</h2>
+            <img id="resultImage" class="rounded-lg mt-4" src="" alt="Generated Outfit"/>
+            <button class="bg-gray-800 text-white py-2 px-4 rounded-full mt-4" onclick="downloadImage()">Download Image</button>
+        </div>
+    </main>
+
+    <script>
+        function previewImage(event, imgId) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById(imgId).src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function processOutfit() {
+            document.getElementById('loading').classList.remove('hidden');
+            const modelInput = document.getElementById('modelInput').files[0];
+            const clothInput = document.getElementById('clothInput').files[0];
+
+            if (!modelInput || !clothInput) {
+                alert("Please upload both images.");
+                document.getElementById('loading').classList.add('hidden');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('model_image', modelInput);
+            formData.append('cloth_image', clothInput);
+
+            fetch('/process', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').classList.add('hidden');
+                if (data.image_url) {
+                    // Redirect to the result page with the image URL
+                    window.location.href = `/result?image_url=${data.image_url}`;
+                } else {
+                    alert("Error processing outfit.");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('loading').classList.add('hidden');
+            });
+        }
+
+        function downloadImage() {
+            const imageUrl = document.getElementById('resultImage').src;
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            link.download = 'processed_outfit.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
